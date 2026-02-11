@@ -479,125 +479,84 @@ logoutBtn.addEventListener('click', async (e) => {
 
 // Modal Logic
 const addModal = document.getElementById('add-modal');
-// const addBtn = document.getElementById('add-gear-btn'); // Removed from DOM
-const fetchBtn = document.getElementById('fetch-btn');
 const closeModal = document.getElementById('close-modal');
-const gearUrl = document.getElementById('gear-url');
-const preview = document.getElementById('preview');
+const addGearForm = document.getElementById('add-gear-form');
 
-// addBtn (now dynamic) is handled in renderList
 closeModal.addEventListener('click', () => {
     addModal.classList.add('hidden');
-    preview.classList.add('hidden');
-    gearUrl.value = '';
+    addGearForm.reset();
 });
 
-fetchBtn.addEventListener('click', async () => {
-    const url = gearUrl.value;
-    if (!url) return;
+addGearForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    fetchBtn.textContent = 'Fetching...';
-    await new Promise(r => setTimeout(r, 1000));
+    if (!currentUserId) {
+        alert("Please sign in to add gear.");
+        return;
+    }
+
+    const name = document.getElementById('gear-name').value.trim();
+    const category = document.getElementById('gear-category').value.trim();
+    const note = document.getElementById('gear-note').value.trim();
+
+    if (!name || !category) {
+        alert("Please fill in product name and category.");
+        return;
+    }
+
+    // Dynamic Import for additional Firestore functions
+    const { updateDoc, arrayUnion, increment, getDocs, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
     try {
-        const domain = new URL(url).hostname;
-        const name = domain.split('.').length > 2 ? domain.split('.')[1] : domain.split('.')[0];
-        const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
+        // 1. Check if item exists
+        const q = query(gearCollection, where("name", "==", name));
+        const querySnapshot = await getDocs(q);
 
-        // Safe DOM update for preview
-        const previewContent = document.getElementById('preview-content');
-        previewContent.innerHTML = ''; // Clear
+        if (!querySnapshot.empty) {
+            // Item Exists - Update it
+            const existingDoc = querySnapshot.docs[0];
+            const docRef = existingDoc.ref;
 
-        const nameDiv = document.createElement('div');
-        nameDiv.style.fontWeight = '600';
-        nameDiv.style.color = '#111';
-        nameDiv.textContent = `Found: ${formattedName}`;
-
-        const catDiv = document.createElement('div');
-        catDiv.style.fontSize = '0.85rem';
-        catDiv.style.color = '#999';
-        catDiv.style.marginTop = '0.25rem';
-        catDiv.textContent = 'Suggested Category: Tech';
-
-        previewContent.appendChild(nameDiv);
-        previewContent.appendChild(catDiv);
-
-        preview.classList.remove('hidden');
-
-        // Note: listener is re-attached here to capture closure variables
-        const confirmBtn = document.getElementById('confirm-add');
-        const newConfirmBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-        newConfirmBtn.addEventListener('click', async () => {
-            if (!currentUserId) {
-                alert("Please sign in to add gear.");
+            // Check if user already owns it
+            const data = existingDoc.data();
+            if (data.ownerIds && data.ownerIds.includes(currentUserId)) {
+                alert("You already have this item in your bag!");
                 return;
             }
 
-            const note = document.getElementById('gear-note').value;
-            // Dynamic Import for additional Firestore functions needed for Logic
-            const { updateDoc, arrayUnion, increment, getDocs, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const updates = {
+                owners: increment(1),
+                ownerIds: arrayUnion(currentUserId)
+            };
 
-            try {
-                // 1. Check if item exists
-                const q = query(gearCollection, where("name", "==", formattedName));
-                const querySnapshot = await getDocs(q);
-
-                if (!querySnapshot.empty) {
-                    // Item Exists - Update it
-                    const existingDoc = querySnapshot.docs[0];
-                    const docRef = existingDoc.ref;
-
-                    // Check if user already owns it to prevent double counting
-                    const data = existingDoc.data();
-                    if (data.ownerIds && data.ownerIds.includes(currentUserId)) {
-                        alert("You already have this item in your bag!");
-                        return;
-                    }
-
-                    const updates = {
-                        owners: increment(1),
-                        ownerIds: arrayUnion(currentUserId)
-                    };
-
-                    if (note) {
-                        updates[`notes.${currentUserId}`] = note;
-                    }
-
-                    await updateDoc(docRef, updates);
-
-                } else {
-                    // 2. Item New - Create it
-                    const notesObj = {};
-                    if (note) {
-                        notesObj[currentUserId] = note;
-                    }
-
-                    await addDoc(gearCollection, {
-                        name: formattedName,
-                        category: 'Tech',
-                        owners: 1,
-                        ownerIds: [currentUserId],
-                        notes: notesObj, // New structure
-                        createdAt: serverTimestamp()
-                    });
-                }
-
-                addModal.classList.add('hidden');
-                preview.classList.add('hidden');
-                gearUrl.value = '';
-                document.getElementById('gear-note').value = '';
-            } catch (error) {
-                console.error("Error adding gear:", error);
-                alert("Failed to add gear. Try again.");
+            if (note) {
+                updates[`notes.${currentUserId}`] = note;
             }
-        });
 
-    } catch (e) {
-        alert("Invalid URL");
-    } finally {
-        fetchBtn.textContent = 'Fetch Details';
+            await updateDoc(docRef, updates);
+
+        } else {
+            // 2. Item New - Create it
+            const notesObj = {};
+            if (note) {
+                notesObj[currentUserId] = note;
+            }
+
+            await addDoc(gearCollection, {
+                name: name,
+                category: category,
+                owners: 1,
+                ownerIds: [currentUserId],
+                notes: notesObj,
+                createdAt: serverTimestamp()
+            });
+        }
+
+        addModal.classList.add('hidden');
+        addGearForm.reset();
+    } catch (error) {
+        console.error("Error adding gear:", error);
+        alert("Failed to add gear. Try again.");
     }
 });
 
