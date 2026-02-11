@@ -352,7 +352,6 @@ function updateNavState() {
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const userInfo = document.getElementById('user-info');
-const userName = document.getElementById('user-name');
 
 // Auth Modal Elements
 const authModal = document.getElementById('auth-modal');
@@ -370,7 +369,6 @@ if (auth) {
             currentUserId = user.uid;
             loginBtn.classList.add('hidden');
             userInfo.classList.remove('hidden');
-            userName.textContent = user.email ? user.email.split('@')[0] : 'User'; // Use email handle as name
 
             // Show My Bag since we are logged in
             document.getElementById('nav-home').classList.remove('hidden');
@@ -470,7 +468,9 @@ authForm.addEventListener('submit', (e) => {
         });
 });
 
-logoutBtn.addEventListener('click', async () => {
+
+logoutBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
     await signOut(auth);
 });
 
