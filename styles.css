@@ -60,6 +60,55 @@ h1 a {
     text-decoration: none;
 }
 
+#unified-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    margin: 2rem 0;
+    padding: 0.75rem 0;
+}
+
+.nav-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nav-tab {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+}
+
+.nav-tab:hover {
+    color: var(--text-primary);
+    background: #f5f5f5;
+}
+
+.nav-tab.active {
+    background: var(--text-primary);
+    color: #fff;
+}
+
+.nav-tab .count {
+    margin-left: 0.4rem;
+    opacity: 0.6;
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.nav-tab.active .count {
+    opacity: 0.8;
+}
+
 nav {
     display: flex;
     gap: 1rem;
@@ -82,51 +131,6 @@ nav a:hover {
 nav a.active {
     background: var(--text-primary);
     color: #fff;
-}
-
-/* Stats */
-.stats {
-    display: flex;
-    gap: 3rem;
-    margin-bottom: 2rem;
-}
-
-.stat {
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    transition: transform 0.2s ease, opacity 0.2s;
-}
-
-.stat:hover {
-    opacity: 0.7;
-    transform: translateY(-1px);
-}
-
-.stat.active .stat-value {
-    color: var(--accent-color);
-}
-
-.stat.active .stat-label {
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.stat-value {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    letter-spacing: -0.04em;
-    line-height: 1;
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 0.5rem;
-    transition: color 0.2s;
 }
 
 .divider {

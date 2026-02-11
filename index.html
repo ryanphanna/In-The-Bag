@@ -12,23 +12,16 @@
     <div class="container">
         <header>
             <h1><a href="/">In The Bag</a></h1>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <nav id="main-nav">
-                    <a href="#" id="nav-home" class="active">My Bag</a>
-                    <a href="#" id="nav-directory">Directory</a>
-                </nav>
-                <div id="auth-controls">
-                    <button id="login-btn" class="btn-minimal">Sign In</button>
-                    <div id="user-info" class="hidden">
-                        <a href="#" id="logout-btn"
-                            style="font-size: 0.9rem; color: var(--text-tertiary); text-decoration: none;">Sign Out</a>
-                    </div>
-
+            <div id="auth-controls">
+                <button id="login-btn" class="btn-minimal">Sign In</button>
+                <div id="user-info" class="hidden">
+                    <a href="#" id="logout-btn"
+                        style="font-size: 0.9rem; color: var(--text-tertiary); text-decoration: none;">Sign Out</a>
                 </div>
             </div>
         </header>
 
-        <div id="stats-summary"></div>
+        <nav id="unified-nav"></nav>
         <div id="gear-list-container"></div>
 
         <hr class="divider">

@@ -229,45 +229,54 @@ function renderOwnersView(items) {
     container.appendChild(list);
 }
 
-function renderStats(items) {
-    const statsSummary = document.getElementById('stats-summary');
-    const totalItems = items.length; // Items in current context
+function renderUnifiedNav(items) {
+    const unifiedNav = document.getElementById('unified-nav');
+    const totalItems = items.length;
     const totalOwners = items.reduce((sum, i) => sum + i.owners, 0);
     const totalCategories = new Set(items.map(i => i.category)).size;
 
-    statsSummary.innerHTML = `
-    <hr class="divider">
-    <div class="stats">
-      <div class="stat ${currentView === 'items' && !selectedCategory ? 'active' : ''}" id="stat-items">
-        <span class="stat-value">${totalItems}</span>
-        <span class="stat-label">Items</span>
-      </div>
-      <div class="stat ${currentView === 'categories' ? 'active' : ''}" id="stat-categories">
-        <span class="stat-value">${totalCategories}</span>
-        <span class="stat-label">Categories</span>
-      </div>
-      <div class="stat ${currentView === 'owners' ? 'active' : ''}" id="stat-owners">
-        <span class="stat-value">${totalOwners}</span>
-        <span class="stat-label">Owners</span>
-      </div>
-    </div>
-    <hr class="divider">
-    ${selectedCategory ? `<div style="text-align: center; margin-bottom: 1rem; color: #666;">Filtering by: <strong>${selectedCategory}</strong> <button id="clear-filter" class="btn-minimal" style="font-size: 0.7rem; margin-left: 0.5rem;">Clear</button></div>` : ''}
-  `;
+    unifiedNav.innerHTML = `
+        <div class="nav-group">
+            ${currentUserId ? `<button class="nav-tab ${currentContext === 'home' ? 'active' : ''}" id="nav-home">My Bag</button>` : ''}
+            <button class="nav-tab ${currentContext === 'directory' ? 'active' : ''}" id="nav-directory">Directory</button>
+        </div>
+        <div class="nav-group">
+            <button class="nav-tab ${currentView === 'items' && !selectedCategory ? 'active' : ''}" id="view-items">
+                Items <span class="count">${totalItems}</span>
+            </button>
+            <button class="nav-tab ${currentView === 'categories' ? 'active' : ''}" id="view-categories">
+                Categories <span class="count">${totalCategories}</span>
+            </button>
+            <button class="nav-tab ${currentView === 'owners' ? 'active' : ''}" id="view-owners">
+                Popularity <span class="count">${totalOwners}</span>
+            </button>
+        </div>
+    `;
 
-    document.getElementById('stat-items').addEventListener('click', () => {
-        selectedCategory = null;
-        switchView('items');
-    });
-    document.getElementById('stat-categories').addEventListener('click', () => switchView('categories'));
-    document.getElementById('stat-owners').addEventListener('click', () => switchView('owners'));
-
-    if (selectedCategory) {
-        document.getElementById('clear-filter').addEventListener('click', () => {
+    // Event Listeners for Context
+    if (currentUserId) {
+        document.getElementById('nav-home').addEventListener('click', () => {
+            currentContext = 'home';
+            currentView = 'items';
             selectedCategory = null;
             render();
         });
     }
+
+    document.getElementById('nav-directory').addEventListener('click', () => {
+        currentContext = 'directory';
+        currentView = 'owners'; // Default to popular in directory
+        selectedCategory = null;
+        render();
+    });
+
+    // Event Listeners for Views
+    document.getElementById('view-items').addEventListener('click', () => {
+        selectedCategory = null;
+        switchView('items');
+    });
+    document.getElementById('view-categories').addEventListener('click', () => switchView('categories'));
+    document.getElementById('view-owners').addEventListener('click', () => switchView('owners'));
 }
 
 function getFilteredItems() {
@@ -285,27 +294,36 @@ function getFilteredItems() {
 
 
 function render() {
-    const items = getFilteredItems();
-    // Pass ALL context items to stats, not just category-filtered ones,
-    // so stats show total counts context-wide.
-    // Actually, stats usually show what is displayed.
-    // Let's pass the context-only items to stats to show total available in this context.
     const contextItems = currentContext === 'home'
         ? gearItems.filter(item => item.ownerIds && item.ownerIds.includes(currentUserId))
         : gearItems;
 
+    const filteredItems = getFilteredItems();
 
-    renderStats(contextItems);
+    renderUnifiedNav(contextItems);
 
     if (currentView === 'items') {
-        renderList(items);
+        renderList(filteredItems);
     } else if (currentView === 'categories') {
-        renderCategoriesView(contextItems); // Show all categories in context
+        renderCategoriesView(contextItems);
     } else if (currentView === 'owners') {
         renderOwnersView(contextItems);
     }
 
-    updateNavState();
+    if (selectedCategory) {
+        const container = document.getElementById('gear-list-container');
+        const filterStatus = document.createElement('div');
+        filterStatus.style.padding = '0 0 1.5rem 0';
+        filterStatus.style.fontSize = '0.9rem';
+        filterStatus.style.color = '#666';
+        filterStatus.innerHTML = `Filtering by: <strong>${selectedCategory}</strong> <button id="clear-filter" class="btn-minimal" style="font-size: 0.75rem; margin-left: 0.5rem; padding: 0.2rem 0.5rem;">Clear</button>`;
+        container.prepend(filterStatus);
+
+        document.getElementById('clear-filter').addEventListener('click', () => {
+            selectedCategory = null;
+            render();
+        });
+    }
 }
 
 function switchView(view) {
@@ -313,43 +331,9 @@ function switchView(view) {
     render();
 }
 
-function switchContext(context) {
-    currentContext = context;
-    currentView = 'items'; // Reset view when switching context
-    render();
-}
 
-// Event Listeners
-document.getElementById('nav-home').addEventListener('click', (e) => {
-    e.preventDefault();
-    if (currentUserId) {
-        switchContext('home');
-    }
-});
-
-document.getElementById('nav-directory').addEventListener('click', (e) => {
-    e.preventDefault();
-    switchContext('directory');
-    // Default to showing by popularity (owners)
-    currentView = 'owners';
-    render();
-});
-
-function updateNavState() {
-    // Nav Visibility
-    const navHome = document.getElementById('nav-home');
-    if (currentUserId) {
-        navHome.classList.remove('hidden');
-    } else {
-        navHome.classList.add('hidden');
-    }
-
-    // Active States
-    navHome.classList.toggle('active', currentContext === 'home');
-    document.getElementById('nav-directory').classList.toggle('active', currentContext === 'directory');
-
-    // Header text is static "In The Bag" now, so no updates needed here.
-}
+// Initial UI State
+// Handled by onAuthStateChanged and render()
 
 // Auth Logic
 const loginBtn = document.getElementById('login-btn');
@@ -364,7 +348,6 @@ const closeAuthModal = document.getElementById('close-auth-modal');
 const authMessage = document.getElementById('auth-message');
 
 // Initial UI State
-document.getElementById('nav-home').classList.add('hidden');
 
 if (auth) {
     onAuthStateChanged(auth, (user) => {
@@ -373,32 +356,28 @@ if (auth) {
             loginBtn.classList.add('hidden');
             userInfo.classList.remove('hidden');
 
-            // Show My Bag since we are logged in
-            document.getElementById('nav-home').classList.remove('hidden');
-
             // Default to home if not set
             if (currentContext !== 'directory') {
-                switchContext('home');
+                currentContext = 'home';
+                currentView = 'items';
             }
         } else {
             currentUserId = null;
             loginBtn.classList.remove('hidden');
             userInfo.classList.add('hidden');
 
-            // Hide My Bag since we are logged out
-            document.getElementById('nav-home').classList.add('hidden');
-
             // Force directory view if signed out
-            switchContext('directory');
+            currentContext = 'directory';
+            currentView = 'owners';
         }
-        // Update nav state to ensure active classes are correct
-        updateNavState();
+        render();
     });
 } else {
     // Initial state if auth not ready (treat as guest)
     currentUserId = null;
-    document.getElementById('nav-home').classList.add('hidden');
-    switchContext('directory');
+    currentContext = 'directory';
+    currentView = 'owners';
+    render();
 }
 
 
