@@ -330,6 +330,9 @@ document.getElementById('nav-home').addEventListener('click', (e) => {
 document.getElementById('nav-directory').addEventListener('click', (e) => {
     e.preventDefault();
     switchContext('directory');
+    // Default to showing by popularity (owners)
+    currentView = 'owners';
+    render();
 });
 
 function updateNavState() {
