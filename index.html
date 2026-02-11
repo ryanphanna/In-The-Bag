@@ -59,19 +59,17 @@
                 <form id="add-gear-form">
                     <input type="text" id="gear-name" placeholder="Product name (e.g., Osmo Pocket 3)" required
                         style="margin-bottom: 1rem;">
-                    <select id="gear-category" required
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.95rem; margin-bottom: 1rem; background: #fcfcfc;">
-                        <option value="">Select category...</option>
-                        <option value="Camera">Camera</option>
-                        <option value="Computer">Computer</option>
-                        <option value="Peripheral">Peripheral</option>
-                        <option value="Bag">Bag</option>
-                        <option value="Clothing">Clothing</option>
-                        <option value="Tech">Tech</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <textarea id="gear-note" placeholder="Why I use this... (optional)"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; margin-bottom: 1rem;"></textarea>
+                    <input type="text" id="gear-category" list="category-suggestions"
+                        placeholder="Category (start typing...)" required style="margin-bottom: 1.5rem;">
+                    <datalist id="category-suggestions">
+                        <option value="Camera">
+                        <option value="Computer">
+                        <option value="Peripheral">
+                        <option value="Bag">
+                        <option value="Clothing">
+                        <option value="Tech">
+                        <option value="Other">
+                    </datalist>
                     <button type="submit" class="btn-minimal" style="width: 100%; padding: 0.75rem;">Add to My
                         Bag</button>
                 </form>

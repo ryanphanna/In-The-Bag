@@ -497,7 +497,6 @@ addGearForm.addEventListener('submit', async (e) => {
 
     const name = document.getElementById('gear-name').value.trim();
     const category = document.getElementById('gear-category').value.trim();
-    const note = document.getElementById('gear-note').value.trim();
 
     if (!name || !category) {
         alert("Please fill in product name and category.");
@@ -524,30 +523,18 @@ addGearForm.addEventListener('submit', async (e) => {
                 return;
             }
 
-            const updates = {
+            await updateDoc(docRef, {
                 owners: increment(1),
                 ownerIds: arrayUnion(currentUserId)
-            };
-
-            if (note) {
-                updates[`notes.${currentUserId}`] = note;
-            }
-
-            await updateDoc(docRef, updates);
+            });
 
         } else {
             // 2. Item New - Create it
-            const notesObj = {};
-            if (note) {
-                notesObj[currentUserId] = note;
-            }
-
             await addDoc(gearCollection, {
                 name: name,
                 category: category,
                 owners: 1,
                 ownerIds: [currentUserId],
-                notes: notesObj,
                 createdAt: serverTimestamp()
             });
         }
