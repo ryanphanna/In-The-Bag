@@ -52,10 +52,16 @@ function renderList(items) {
         const addBtnContainer = document.createElement('div');
         addBtnContainer.style.marginBottom = '2rem';
         addBtnContainer.style.textAlign = 'right';
-        addBtnContainer.innerHTML = `<button id="add-gear-btn-top" class="btn-minimal">+ Add Item</button>`;
+
+        const addBtn = document.createElement('button');
+        addBtn.id = "add-gear-btn-top";
+        addBtn.className = "btn-minimal";
+        addBtn.textContent = "+ Add Item";
+        addBtnContainer.appendChild(addBtn);
+
         container.appendChild(addBtnContainer);
 
-        document.getElementById('add-gear-btn-top').addEventListener('click', () => {
+        addBtn.addEventListener('click', () => {
             document.getElementById('add-modal').classList.remove('hidden');
         });
     }
@@ -67,19 +73,22 @@ function renderList(items) {
         msg.style.color = "#999";
         msg.style.padding = "4rem 2rem";
 
-        let html = `<p>No items found in this bag.</p>`;
+        const p = document.createElement('p');
+        p.textContent = "No items found in this bag.";
+        msg.appendChild(p);
 
         // Add seed button for local development
         if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-            html += `<button id="seed-btn" class="btn-minimal" style="margin-top: 2rem;">Seed Demo Data</button>`;
+            const seedBtn = document.createElement('button');
+            seedBtn.id = "seed-btn";
+            seedBtn.className = "btn-minimal";
+            seedBtn.style.marginTop = "2rem";
+            seedBtn.textContent = "Seed Demo Data";
+            seedBtn.addEventListener('click', seedData);
+            msg.appendChild(seedBtn);
         }
 
-        msg.innerHTML = html;
         container.appendChild(msg);
-
-        if (document.getElementById('seed-btn')) {
-            document.getElementById('seed-btn').addEventListener('click', seedData);
-        }
         return;
     }
 
@@ -90,22 +99,72 @@ function renderList(items) {
     items.forEach(item => {
         const li = document.createElement('li');
         li.className = 'item';
+        // Inline styles moved to CSS class ideally, but keeping structural changes minimal here
         li.style.flexDirection = 'column';
         li.style.alignItems = 'flex-start';
         li.style.gap = '0.25rem';
-        li.innerHTML = `
-            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                <div class="item-info">
-                    <span class="item-name">${item.name}</span>
-                    <span class="item-meta" style="margin-left: 0.5rem; font-size: 0.75rem; background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">${item.category}</span>
-                </div>
-                <span class="item-meta">${item.owners || 1} owners</span>
-            </div>
-            ${item.note ? `<div class="item-note" style="font-size: 0.85rem; color: #666; font-style: italic; border-left: 2px solid #e5e5e5; padding-left: 0.75rem; margin-top: 0.5rem;">"${item.note}"</div>` : ''}
-        `;
+
+        const topRow = document.createElement('div');
+        topRow.style.display = 'flex';
+        topRow.style.justifyContent = 'space-between';
+        topRow.style.width = '100%';
+        topRow.style.alignItems = 'center';
+
+        const itemInfo = document.createElement('div');
+        itemInfo.className = 'item-info';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'item-name';
+        nameSpan.textContent = item.name;
+
+        const categorySpan = document.createElement('span');
+        categorySpan.className = 'item-meta';
+        categorySpan.style.marginLeft = '0.5rem';
+        categorySpan.style.fontSize = '0.75rem';
+        categorySpan.style.background = '#f0f0f0';
+        categorySpan.style.padding = '2px 6px';
+        categorySpan.style.borderRadius = '4px';
+        categorySpan.textContent = item.category;
+
+        itemInfo.appendChild(nameSpan);
+        itemInfo.appendChild(categorySpan);
+
+        const ownersSpan = document.createElement('span');
+        ownersSpan.className = 'item-meta';
+        ownersSpan.textContent = `${item.owners || 1} owners`;
+
+        topRow.appendChild(itemInfo);
+        topRow.appendChild(ownersSpan);
+        li.appendChild(topRow);
+
+        // Logic check for Note:
+        // 1. Check item.notes[currentUserId] (New Logic)
+        // 2. Check item.note (Legacy/Seed Logic)
+        let noteText = '';
+        if (item.notes && currentUserId && item.notes[currentUserId]) {
+            noteText = item.notes[currentUserId];
+        } else if (item.note) {
+            // For legacy items, we might want to only show if the user is the owner, 
+            // but current seed items don't have ownerIds set properly sometimes.
+            // We'll show it if it exists for now to maintain parity with old code.
+            noteText = item.note;
+        }
+
+        if (noteText) {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'item-note';
+            noteDiv.style.fontSize = '0.85rem';
+            noteDiv.style.color = '#666';
+            noteDiv.style.fontStyle = 'italic';
+            noteDiv.style.borderLeft = '2px solid #e5e5e5';
+            noteDiv.style.paddingLeft = '0.75rem';
+            noteDiv.style.marginTop = '0.5rem';
+            noteDiv.textContent = `"${noteText}"`; // Safe text content
+            li.appendChild(noteDiv);
+        }
+
         list.appendChild(li);
     });
-
 
     container.appendChild(list);
 }
@@ -426,10 +485,24 @@ fetchBtn.addEventListener('click', async () => {
         const name = domain.split('.').length > 2 ? domain.split('.')[1] : domain.split('.')[0];
         const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
 
-        document.getElementById('preview-content').innerHTML = `
-            <div style="font-weight: 600; color: #111;">Found: ${formattedName}</div>
-            <div style="font-size: 0.85rem; color: #999; margin-top: 0.25rem;">Suggested Category: Tech</div>
-        `;
+        // Safe DOM update for preview
+        const previewContent = document.getElementById('preview-content');
+        previewContent.innerHTML = ''; // Clear
+
+        const nameDiv = document.createElement('div');
+        nameDiv.style.fontWeight = '600';
+        nameDiv.style.color = '#111';
+        nameDiv.textContent = `Found: ${formattedName}`;
+
+        const catDiv = document.createElement('div');
+        catDiv.style.fontSize = '0.85rem';
+        catDiv.style.color = '#999';
+        catDiv.style.marginTop = '0.25rem';
+        catDiv.textContent = 'Suggested Category: Tech';
+
+        previewContent.appendChild(nameDiv);
+        previewContent.appendChild(catDiv);
+
         preview.classList.remove('hidden');
 
         // Note: listener is re-attached here to capture closure variables
@@ -444,16 +517,53 @@ fetchBtn.addEventListener('click', async () => {
             }
 
             const note = document.getElementById('gear-note').value;
+            // Dynamic Import for additional Firestore functions needed for Logic
+            const { updateDoc, arrayUnion, increment, getDocs, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
             try {
-                await addDoc(gearCollection, {
-                    name: formattedName,
-                    category: 'Tech',
-                    owners: 1,
-                    ownerIds: [currentUserId],
-                    note: note || '',
-                    createdAt: serverTimestamp()
-                });
+                // 1. Check if item exists
+                const q = query(gearCollection, where("name", "==", formattedName));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // Item Exists - Update it
+                    const existingDoc = querySnapshot.docs[0];
+                    const docRef = existingDoc.ref;
+
+                    // Check if user already owns it to prevent double counting
+                    const data = existingDoc.data();
+                    if (data.ownerIds && data.ownerIds.includes(currentUserId)) {
+                        alert("You already have this item in your bag!");
+                        return;
+                    }
+
+                    const updates = {
+                        owners: increment(1),
+                        ownerIds: arrayUnion(currentUserId)
+                    };
+
+                    if (note) {
+                        updates[`notes.${currentUserId}`] = note;
+                    }
+
+                    await updateDoc(docRef, updates);
+
+                } else {
+                    // 2. Item New - Create it
+                    const notesObj = {};
+                    if (note) {
+                        notesObj[currentUserId] = note;
+                    }
+
+                    await addDoc(gearCollection, {
+                        name: formattedName,
+                        category: 'Tech',
+                        owners: 1,
+                        ownerIds: [currentUserId],
+                        notes: notesObj, // New structure
+                        createdAt: serverTimestamp()
+                    });
+                }
 
                 addModal.classList.add('hidden');
                 preview.classList.add('hidden');
@@ -474,10 +584,10 @@ fetchBtn.addEventListener('click', async () => {
 
 async function seedData() {
     const demoGear = [
-        { name: 'Sony A7IV', category: 'Camera', owners: 42, ownerIds: [], note: 'My daily driver for everything.' },
-        { name: 'MacBook Pro M3', category: 'Computer', owners: 15, ownerIds: [], note: 'Absurdly fast.' },
-        { name: 'Keychron Q1', category: 'Peripheral', owners: 8, ownerIds: [], note: 'Heavy, but worth it.' },
-        { name: 'Peak Design Zip 15L', category: 'Bag', owners: 23, ownerIds: [], note: 'Perfect size for day trips.' }
+        { name: 'Sony A7IV', category: 'Camera', owners: 42, ownerIds: [], notes: { 'system': 'My daily driver for everything.' } },
+        { name: 'MacBook Pro M3', category: 'Computer', owners: 15, ownerIds: [], notes: { 'system': 'Absurdly fast.' } },
+        { name: 'Keychron Q1', category: 'Peripheral', owners: 8, ownerIds: [], notes: { 'system': 'Heavy, but worth it.' } },
+        { name: 'Peak Design Zip 15L', category: 'Bag', owners: 23, ownerIds: [], notes: { 'system': 'Perfect size for day trips.' } }
     ];
 
     const btn = document.getElementById('seed-btn');
