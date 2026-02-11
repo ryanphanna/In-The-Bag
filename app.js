@@ -16,6 +16,7 @@ try {
 
 // State
 let gearItems = [];
+let currentUserId = null;
 const gearCollection = collection(db, 'gear');
 
 // Subscribe to Firestore updates
@@ -399,14 +400,18 @@ if (auth) {
     switchContext('directory');
 }
 
+
 // Check for Magic Link on Load
 if (isSignInWithEmailLink(auth, window.location.href)) {
+    console.log('Email link detected, attempting sign-in...');
     let email = window.localStorage.getItem('emailForSignIn');
     if (!email) {
         email = window.prompt('Please provide your email for confirmation');
     }
+    console.log('Signing in with email:', email);
     signInWithEmailLink(auth, email, window.location.href)
         .then((result) => {
+            console.log('Sign-in successful!', result.user);
             window.localStorage.removeItem('emailForSignIn');
             // Clear URL parameters
             window.history.replaceState({}, document.title, "/");

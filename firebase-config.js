@@ -1,7 +1,7 @@
 // Firebase Configuration
 // Project: In The Bag (in-the-bag-29b82)
 export const firebaseConfig = {
-    apiKey: "AIzaSyBa1ZNpU8YF1Ks4MwvvIN0z_HjVuYogl_M",
+    apiKey: "AIzaSyBa1ZNpU8YF1Ks4MwvviN0z_HjVuYogl_M",
     authDomain: "in-the-bag-29b82.firebaseapp.com",
     projectId: "in-the-bag-29b82",
     storageBucket: "in-the-bag-29b82.firebasestorage.app",
