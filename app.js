@@ -432,7 +432,10 @@ closeAuthModal.addEventListener('click', () => {
     authModal.classList.add('hidden');
 });
 
-sendLinkBtn.addEventListener('click', () => {
+const authForm = document.getElementById('auth-form');
+authForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Prevent page reload
+
     const email = authEmail.value;
     if (!email) {
         alert('Please enter a valid email.');
