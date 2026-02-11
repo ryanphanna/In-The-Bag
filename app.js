@@ -413,7 +413,11 @@ if (isSignInWithEmailLink(auth, window.location.href)) {
         })
         .catch((error) => {
             console.error("Error signing in with email link", error);
-            alert("Error signing in: " + error.message);
+            let msg = error.message;
+            if (msg.includes("auth/api-key-not-valid")) {
+                msg = "Configuration Error: API Key invalid. Check your Firebase Console settings.";
+            }
+            alert("Error signing in: " + msg);
         });
 }
 
@@ -449,7 +453,11 @@ sendLinkBtn.addEventListener('click', () => {
         })
         .catch((error) => {
             console.error("Error sending email link", error);
-            authMessage.textContent = `Error: ${error.message}`;
+            let msg = error.message;
+            if (msg.includes("auth/api-key-not-valid")) {
+                msg = "Configuration Error: API Key invalid. Check your Firebase Console settings.";
+            }
+            authMessage.textContent = `Error: ${msg}`;
             authMessage.classList.remove('hidden');
         });
 });
