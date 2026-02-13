@@ -45,7 +45,13 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
+    /* Reduced from 3rem */
+}
+
+/* Compensate for hidden nav on guests */
+body:not(.logged-in) header {
+    margin-bottom: 4rem;
 }
 
 h1 {
@@ -219,6 +225,38 @@ nav a.active {
 
 .btn-minimal:active {
     transform: translateY(0);
+}
+
+/* Search */
+.search-container {
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    background: #fff;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+    border-color: #bbb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.btn-remove {
+    transition: opacity 0.2s ease;
+}
+
+.btn-remove:hover {
+    opacity: 1 !important;
+    text-decoration: underline;
 }
 
 /* Modals */

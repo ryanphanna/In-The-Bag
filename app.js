@@ -39,9 +39,10 @@ try {
 
 
 // State
-let currentContext = 'home'; // 'home' | 'directory'
-let currentView = 'items'; // 'items' | 'categories' | 'owners'
+let currentContext = 'explore'; // 'home' | 'explore'
+let currentView = 'items'; // 'items' | 'categories'
 let selectedCategory = null;
+let searchQuery = '';
 
 // UI Rendering
 function renderList(items) {
@@ -58,13 +59,46 @@ function renderList(items) {
         addBtn.id = "add-gear-btn-top";
         addBtn.className = "btn-minimal";
         addBtn.textContent = "+ Add Item";
-        addBtnContainer.appendChild(addBtn);
-
-        container.appendChild(addBtnContainer);
-
         addBtn.addEventListener('click', () => {
             document.getElementById('add-modal').classList.remove('hidden');
         });
+        addBtnContainer.appendChild(addBtn);
+
+        container.appendChild(addBtnContainer);
+    }
+
+    // Search Bar (Items view only)
+    if (currentView === 'items' && !selectedCategory) {
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'search-container';
+        searchContainer.style.marginBottom = '1.5rem';
+
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search items...';
+        searchInput.className = 'search-input';
+        searchInput.value = searchQuery;
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            render();
+            // Refocus after render if needed, but since we're re-rendering the whole slab it might lose focus.
+            // A better way would be to only re-render the list or maintain focus.
+            // For now, let's keep it simple and see.
+        });
+
+        searchContainer.appendChild(searchInput);
+        container.appendChild(searchContainer);
+
+        // Maintain focus if we were typing
+        if (searchQuery) {
+            setTimeout(() => {
+                const input = document.querySelector('.search-input');
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(searchQuery.length, searchQuery.length);
+                }
+            }, 0);
+        }
     }
 
     if (items.length === 0) {
@@ -137,6 +171,28 @@ function renderList(items) {
         topRow.appendChild(itemInfo);
         topRow.appendChild(ownersSpan);
         li.appendChild(topRow);
+
+        // Add 'Remove' button if in 'My Bag' context
+        if (currentContext === 'home') {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn-remove';
+            removeBtn.textContent = 'Remove';
+            removeBtn.style.fontSize = '0.7rem';
+            removeBtn.style.marginTop = '0.5rem';
+            removeBtn.style.color = '#cc0000';
+            removeBtn.style.background = 'none';
+            removeBtn.style.border = 'none';
+            removeBtn.style.cursor = 'pointer';
+            removeBtn.style.padding = '0';
+            removeBtn.style.opacity = '0.6';
+
+            removeBtn.addEventListener('click', () => {
+                if (confirm(`Remove ${item.name} from your bag?`)) {
+                    removeFromBag(item.id);
+                }
+            });
+            li.appendChild(removeBtn);
+        }
 
         // Logic check for Note:
         // 1. Check item.notes[currentUserId] (New Logic)
@@ -231,41 +287,40 @@ function renderOwnersView(items) {
 
 function renderUnifiedNav(items) {
     const unifiedNav = document.getElementById('unified-nav');
-    const totalItems = items.length;
-    const totalOwners = items.reduce((sum, i) => sum + i.owners, 0);
-    const totalCategories = new Set(items.map(i => i.category)).size;
+
+    // Hide nav bar entirely for guests
+    if (!currentUserId) {
+        unifiedNav.classList.add('hidden');
+        return;
+    }
+    unifiedNav.classList.remove('hidden');
 
     unifiedNav.innerHTML = `
         <div class="nav-group">
-            ${currentUserId ? `<button class="nav-tab ${currentContext === 'home' ? 'active' : ''}" id="nav-home">My Bag</button>` : ''}
-            <button class="nav-tab ${currentContext === 'directory' ? 'active' : ''}" id="nav-directory">Directory</button>
+            <button class="nav-tab ${currentContext === 'home' ? 'active' : ''}" id="nav-home">My Bag</button>
+            <button class="nav-tab ${currentContext === 'explore' ? 'active' : ''}" id="nav-explore">Explore</button>
         </div>
         <div class="nav-group">
             <button class="nav-tab ${currentView === 'items' && !selectedCategory ? 'active' : ''}" id="view-items">
-                Items <span class="count">${totalItems}</span>
+                Items
             </button>
             <button class="nav-tab ${currentView === 'categories' ? 'active' : ''}" id="view-categories">
-                Categories <span class="count">${totalCategories}</span>
-            </button>
-            <button class="nav-tab ${currentView === 'owners' ? 'active' : ''}" id="view-owners">
-                Popularity <span class="count">${totalOwners}</span>
+                Categories
             </button>
         </div>
     `;
 
     // Event Listeners for Context
-    if (currentUserId) {
-        document.getElementById('nav-home').addEventListener('click', () => {
-            currentContext = 'home';
-            currentView = 'items';
-            selectedCategory = null;
-            render();
-        });
-    }
+    document.getElementById('nav-home').addEventListener('click', () => {
+        currentContext = 'home';
+        currentView = 'items';
+        selectedCategory = null;
+        render();
+    });
 
-    document.getElementById('nav-directory').addEventListener('click', () => {
-        currentContext = 'directory';
-        currentView = 'owners'; // Default to popular in directory
+    document.getElementById('nav-explore').addEventListener('click', () => {
+        currentContext = 'explore';
+        currentView = 'items';
         selectedCategory = null;
         render();
     });
@@ -276,7 +331,6 @@ function renderUnifiedNav(items) {
         switchView('items');
     });
     document.getElementById('view-categories').addEventListener('click', () => switchView('categories'));
-    document.getElementById('view-owners').addEventListener('click', () => switchView('owners'));
 }
 
 function getFilteredItems() {
@@ -284,10 +338,27 @@ function getFilteredItems() {
     // 1. Filter by Context
     if (currentContext === 'home') {
         items = items.filter(item => item.ownerIds && item.ownerIds.includes(currentUserId));
+        // Sort by Recently Added (createdAt)
+        items.sort((a, b) => {
+            const timeA = a.createdAt?.seconds || 0;
+            const timeB = b.createdAt?.seconds || 0;
+            return timeB - timeA;
+        });
+    } else {
+        // Explore View - Sort by Popularity
+        items.sort((a, b) => b.owners - a.owners);
     }
     // 2. Filter by Category (if selected)
     if (selectedCategory) {
         items = items.filter(item => item.category === selectedCategory);
+    }
+    // 3. Filter by Search Query
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        items = items.filter(item =>
+            item.name.toLowerCase().includes(query) ||
+            item.category.toLowerCase().includes(query)
+        );
     }
     return items;
 }
@@ -306,8 +377,6 @@ function render() {
         renderList(filteredItems);
     } else if (currentView === 'categories') {
         renderCategoriesView(contextItems);
-    } else if (currentView === 'owners') {
-        renderOwnersView(contextItems);
     }
 
     if (selectedCategory) {
@@ -355,9 +424,10 @@ if (auth) {
             currentUserId = user.uid;
             loginBtn.classList.add('hidden');
             userInfo.classList.remove('hidden');
+            document.body.classList.add('logged-in');
 
             // Default to home if not set
-            if (currentContext !== 'directory') {
+            if (currentContext !== 'explore') {
                 currentContext = 'home';
                 currentView = 'items';
             }
@@ -366,17 +436,18 @@ if (auth) {
             loginBtn.classList.remove('hidden');
             userInfo.classList.add('hidden');
 
-            // Force directory view if signed out
-            currentContext = 'directory';
-            currentView = 'owners';
+            // Force explore view if signed out
+            currentContext = 'explore';
+            currentView = 'items';
+            document.body.classList.remove('logged-in');
         }
         render();
     });
 } else {
     // Initial state if auth not ready (treat as guest)
     currentUserId = null;
-    currentContext = 'directory';
-    currentView = 'owners';
+    currentContext = 'explore';
+    currentView = 'items';
     render();
 }
 
@@ -525,6 +596,23 @@ addGearForm.addEventListener('submit', async (e) => {
         alert("Failed to add gear. Try again.");
     }
 });
+
+async function removeFromBag(itemId) {
+    if (!currentUserId) return;
+
+    const { updateDoc, arrayRemove, increment, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+    const docRef = doc(db, 'gear', itemId);
+
+    try {
+        await updateDoc(docRef, {
+            owners: increment(-1),
+            ownerIds: arrayRemove(currentUserId)
+        });
+    } catch (error) {
+        console.error("Error removing gear:", error);
+        alert("Failed to remove gear. Try again.");
+    }
+}
 
 async function seedData() {
     const demoGear = [
